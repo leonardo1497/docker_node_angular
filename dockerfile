@@ -1,13 +1,24 @@
-FROM node:10-alpine
+# Angular
+FROM johnpapa/angular-cli as angular-app
 
-WORKDIR /usr/src/app
-
-COPY package.json ./
-
+WORKDIR /app
+COPY package.json /app
 RUN npm install
+COPY . /app
+RUN ng build --prod
 
-COPY . .
+#Express 
+FROM node:10-alpine as express-server
+WORKDIR /app
+COPY /src/server /app
+RUN npm install --production
+
+#Final
+FROM node:10-alpine
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+COPY --from=express-server /app /usr/src/app
+COPY --from=angular-app /app/dist /usr/src/app
 
 EXPOSE 3000
-
-CMD ["npm","start"]
+CMD [ "node", "index.js" ]
